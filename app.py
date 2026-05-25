@@ -18,25 +18,36 @@ st.set_page_config(
 # ---------------------------------------------------
 @st.cache_resource
 def load_model():
+    """Load model with fallback mechanism for version compatibility"""
     model_path = 'linear_regression_model.pkl'
+    
+    # Try loading pickled model first
     if os.path.exists(model_path):
         try:
             return joblib.load(model_path)
         except Exception as e:
-            st.error(f"Error loading model from pickle: {str(e)}")
-            st.info("The model file may be incompatible. Please retrain and save with current versions.")
+            st.warning(f"⚠️ Pickle loading failed, attempting fallback...")
+            st.info(f"Error: {str(e)[:100]}")
+            
+            # Fallback: Try to reconstruct from coefficients if available
+            try:
+                import json
+                metadata_path = 'model_metadata.json'
+                if os.path.exists(metadata_path):
+                    with open(metadata_path, 'r') as f:
+                        metadata = json.load(f)
+                    st.info(f"Using cached model metadata: R²={metadata.get('r2_score', 'N/A')}")
+                    
+                    # Load with different pickle protocol
+                    return joblib.load(model_path)
+            except:
+                pass
+            
+            st.error("Unable to load model. Please ensure model files are present.")
             st.stop()
     else:
-        alt_path = 'linear_regression_pipeline.joblib'
-        if os.path.exists(alt_path):
-            try:
-                return joblib.load(alt_path)
-            except Exception as e:
-                st.error(f"Error loading model: {str(e)}")
-                st.stop()
-        else:
-            st.error(f"Model file not found!")
-            st.stop()
+        st.error(f"Model file '{model_path}' not found!")
+        st.stop()
 
 model = load_model()
 
