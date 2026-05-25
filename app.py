@@ -20,11 +20,20 @@ st.set_page_config(
 def load_model():
     model_path = 'linear_regression_model.pkl'
     if os.path.exists(model_path):
-        return joblib.load(model_path)
+        try:
+            return joblib.load(model_path)
+        except Exception as e:
+            st.error(f"Error loading model from pickle: {str(e)}")
+            st.info("The model file may be incompatible. Please retrain and save with current versions.")
+            st.stop()
     else:
         alt_path = 'linear_regression_pipeline.joblib'
         if os.path.exists(alt_path):
-            return joblib.load(alt_path)
+            try:
+                return joblib.load(alt_path)
+            except Exception as e:
+                st.error(f"Error loading model: {str(e)}")
+                st.stop()
         else:
             st.error(f"Model file not found!")
             st.stop()
